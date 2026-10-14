@@ -1,0 +1,69 @@
+platforms:
+    armv7-ios:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    arm64-ios:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    arm64_sim-ios:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    armv7-android:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+            jetifier: true
+    arm64-android:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+            jetifier: true
+    x86_64-android:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+            jetifier: true
+    arm64-osx:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    x86_64-osx:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    x86_64-linux:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    arm64-linux:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    x86_64-win32:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, libLinearMath, libBulletDynamics, libBulletCollision, libbox2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null.lib]
+    wasm-web:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]
+    wasm_pthread-web:
+        context:
+            excludeSymbols: [ScriptBox2DExt, ScriptBullet3DExt]
+            excludeLibs: [physics, LinearMath, BulletDynamics, BulletCollision, box2d_defold, script_box2d_defold, box2d, script_box2d, physics_2d, physics_2d_defold, physics_3d, script_bullet3d]
+            libs: [physics_null]

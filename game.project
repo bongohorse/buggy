@@ -1,0 +1,30 @@
+[project]
+title = Buggy Ridge
+version = 0.1.0
+[bootstrap]
+main_collection = /main/main.collectionc
+render = /main/buggy.renderc
+[native_extension]
+app_manifest = /main/box2d3.appmanifest
+[display]
+width = 1280
+height = 720
+high_dpi = 0
+vsync = 1
+[engine]
+fixed_update_frequency = 60
+max_time_step = 0.05
+[input]
+game_binding = /main/input.input_bindingc
+[html5]
+htmlfile = /main/index.html
+scale_mode = stretch
+[collection]
+max_instances = 2048
+[script]
+shared_state = 1
+[android]
+package = com.buggyridge.game
+version_code = 1
+[sprite]
+max_count = 1536

@@ -1,0 +1,10 @@
+.cache/
+.build/
+build/
+dist/
+.internal/
+.DS_Store
+*.pyc
+__pycache__/
+
+tests/generated/

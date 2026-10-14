@@ -1,0 +1,8 @@
+name: "BuggyBox2D311"
+platforms:
+    wasm-web:
+        context:
+            libs: ["buggy_box2d311"]
+    x86_64-linux:
+        context:
+            libs: ["buggy_box2d311"]

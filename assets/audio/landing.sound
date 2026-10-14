@@ -1,0 +1,4 @@
+sound: "/assets/audio/landing.wav"
+looping: 0
+gain: 1
+speed: 1

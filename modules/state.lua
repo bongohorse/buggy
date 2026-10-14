@@ -1,0 +1,1 @@
+return {mode='ready',camera_x=0,camera_y=0,view_height=720,view_width=1280,input={keys={},touches={}},distance=0,best=0,speed=0,score=0,time=0,airtime=0,air_total=0,landings=0,roof_time=0,toast='',toast_time=0,restart=false,telemetry_time=0}

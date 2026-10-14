@@ -1,0 +1,5 @@
+material: "/main/terrain.material"
+vertices: "/assets/road.buffer"
+textures: "/assets/terrain-painted.png"
+primitive_type: PRIMITIVE_TRIANGLES
+position_stream: "position"

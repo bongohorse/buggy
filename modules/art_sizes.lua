@@ -1,0 +1,18 @@
+return {
+["chassis"]={407,200},
+["wheel-painted"]={256,256},
+["tree-pine-painted"]={512,479},
+["tree-birch-painted"]={512,471},
+["grass-painted"]={384,144},
+["rocks-painted"]={384,160},
+["wood-painted"]={192,32},
+["ui-panel-painted"]={384,144},
+["ui-pedal-painted"]={192,192},
+["spring"]={20,96},
+["pixel"]={8,8},
+["dot"]={32,32},
+["flag"]={96,160},
+["background"]={1008,672},
+["parallax-hills"]={1008,395},
+["parallax-forest"]={1008,474},
+}

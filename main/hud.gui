@@ -1,0 +1,7 @@
+script: "/main/hud.gui_script"
+fonts { name: "default" font: "/assets/fonts/ui.font" }
+material: "/builtins/materials/gui.material"
+max_nodes: 192
+adjust_reference: ADJUST_REFERENCE_DISABLED
+textures { name: "art" texture: "/assets/game.atlas" }
+fonts { name: "racing" font: "/assets/fonts/racing.font" }

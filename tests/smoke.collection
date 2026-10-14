@@ -1,0 +1,3 @@
+name: "buggy_runtime_smoke"
+collection_instances { id: "game" collection: "/main/main.collection" }
+embedded_instances { id: "smoke" data: "components { id: \"script\" component: \"/tests/smoke.script\" }\n" }

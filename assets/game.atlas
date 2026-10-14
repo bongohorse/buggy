@@ -1,0 +1,16 @@
+images { image: "/assets/chassis.png" }
+images { image: "/assets/wheel-painted.png" }
+images { image: "/assets/tree-pine-painted.png" }
+images { image: "/assets/tree-birch-painted.png" }
+images { image: "/assets/grass-painted.png" }
+images { image: "/assets/rocks-painted.png" }
+images { image: "/assets/wood-painted.png" }
+images { image: "/assets/ui-panel-painted.png" }
+images { image: "/assets/ui-pedal-painted.png" }
+images { image: "/assets/spring.png" }
+images { image: "/assets/pixel.png" }
+images { image: "/assets/dot.png" }
+images { image: "/assets/flag.png" }
+extrude_borders: 2
+margin: 0
+inner_padding: 2

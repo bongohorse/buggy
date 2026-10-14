@@ -1,0 +1,4 @@
+sound: "/assets/audio/creak.wav"
+looping: 0
+gain: 1
+speed: 1

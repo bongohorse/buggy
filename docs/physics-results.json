@@ -1,0 +1,48 @@
+{
+  "acceleration_speed_m_s": 14.939,
+  "brake_speed_m_s": 0.1731,
+  "reverse_speed_m_s": -4.277,
+  "suspension_travel_m": [
+    -0.0256,
+    0.2397
+  ],
+  "air_control": "both directions verified",
+  "dynamic_bridge": {
+    "planks": 12,
+    "loaded_sag_m": 1.386,
+    "reset_verified": true
+  },
+  "track_completed": true,
+  "track_time_s": 54.38,
+  "air_frames": 518,
+  "landings": 29,
+  "roof_frames": 0,
+  "native_step_mean_ms": 0.0255,
+  "upper_route_frames": 130,
+  "lower_route_verified": true,
+  "gas_only": {
+    "crashed": true,
+    "distance_m": 495.3
+  },
+  "surface_coast_retention": {
+    "dirt": 0.912,
+    "grass": 0.653,
+    "stone": 0.785,
+    "wood": 0.87
+  },
+  "live_tuning": {
+    "pose_preserved": true,
+    "power_speed_after_1s_m_s": [
+      2.705,
+      7.826
+    ],
+    "air_angle_rad": [
+      0.152,
+      0.32
+    ],
+    "changing_extremes_steps": 900,
+    "invalid_values_clamped": true
+  },
+  "reset_cycles": 100,
+  "box2d_bytes_after_destroy": 0
+}

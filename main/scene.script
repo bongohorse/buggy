@@ -1,0 +1,102 @@
+local s=require 'modules.state'
+local input=require 'modules.input'
+local track=require 'modules.track'
+local art=require 'modules.art'
+local tuning=require 'modules.tuning'
+local camera=require 'modules.camera'
+local audio=require 'modules.audio'
+local progress=require 'modules.progress'
+local function save_record()
+ s.record.best=math.max(s.record.best or 0,s.best)
+ pcall(sys.save,sys.get_save_file('buggy_ridge',track.revision),s.record)
+end
+local function save_best()
+ if not s.practice and s.distance>s.best then s.best=s.distance;save_record() end
+end
+local function reset(self,full)
+ if full or not s.practice then s.checkpoint=3 end
+ local x=s.practice and s.checkpoint or 3
+ buggy_physics.reset(x,track.height(x)+1.8)
+ s.mode='running';s.restart=false;s.distance=math.max(0,math.floor(x-3));s.speed=0;s.score=0;s.time=0;s.airtime=0;s.air_total=0;s.landings=0;s.roof_time=0;s.toast='';s.toast_time=0;s.collected={};s.tokens=0;s.impact=0;s.medal='';s.new_best=false
+ input.clear(s.input);if s.retry_pointer then s.input.touches[s.retry_pointer]='gas' end;if s.retry_key then s.input.keys.gas=true end;s.retry_pointer=nil;s.retry_key=nil;self.p=buggy_physics.state();self.snap=true;self.previous=self.p;self.audio.creak=0
+end
+function init(self)
+ assert(buggy_physics.version()=='3.1.1','Box2D version mismatch')
+ local ok,record=pcall(sys.load,sys.get_save_file('buggy_ridge',track.revision))
+ s.record=ok and record or {};s.best=tonumber(s.record.best) or 0
+ if type(s.record.best_time)~='number' or s.record.best_time<1 or s.record.best_time>10000 then s.record.best_time=nil end
+ local pref_ok,prefs=pcall(sys.load,sys.get_save_file('buggy_ridge','audio'));s.sound_on=not pref_ok or prefs.enabled~=false
+ s.practice=false;s.checkpoint=3;s.surface=0;s.collected={};s.tokens=0;s.impact=0
+ tuning.load();tuning.apply();self.tuning_revision=tuning.revision
+ buggy_physics.create(track.points,track.bridge,track.gaps)
+ for _,r in ipairs(track.routes) do buggy_physics.add_route(r.points) end
+ self.p=buggy_physics.state();self.previous=self.p;self.art=art.create();self.snap=true;self.audio={}
+ window.set_listener(function(_,event)
+  if event==window.WINDOW_EVENT_FOCUS_LOST or event==window.WINDOW_EVENT_ICONIFIED then
+   if s.mode=='running' then s.mode='paused';save_best() end;input.clear(s.input)
+  end
+ end)
+end
+function fixed_update(self,dt)
+ s.tick=(s.tick or 0)+1
+ if s.restart then local full=s.restart=='full';save_best();reset(self,full) end
+ if self.tuning_revision~=tuning.revision then tuning.apply();self.tuning_revision=tuning.revision end
+ if s.mode~='running' then return end
+ local gas,brake=input.pedals(s.input);local old=self.p
+ local rear=track.surface(old.rear.x,old.rear.y);local front=track.surface(old.front.x,old.front.y)
+ buggy_physics.surface(rear,front);buggy_physics.step(gas,brake);self.p=buggy_physics.state()
+ local p=self.p;s.surface=front;s.gear=p.gear;s.time=s.time+1/60;s.speed=math.abs(p.speed)*3.6;s.distance=math.max(0,math.min(track.length,math.floor(p.body.x-3)))
+ s.toast_time=math.max(0,s.toast_time-1/60)
+ if not p.grounded then s.airtime=s.airtime+1/60;s.air_total=s.air_total+1/60
+ elseif s.airtime>0 then
+  if s.airtime>.12 then
+   local impact=math.max(0,-(old.vy or 0));s.impact=math.min(8,impact*.65)
+   audio.effect(s,'landing',math.min(.6,.15+impact*.035))
+  end
+  if s.airtime>.3 then
+   local bonus=math.floor(s.airtime*100);s.score=s.score+bonus;s.landings=s.landings+1
+   s.toast='CLEAN LANDING +'..bonus;s.toast_time=1.4
+  end
+  s.airtime=0
+ end
+ if s.practice and p.grounded and math.abs(p.body.angle)<.55 then
+  for _,x in ipairs(track.checkpoints) do
+   if x>s.checkpoint and p.body.x>=x and p.body.x<x+12 then
+    s.checkpoint=x;s.toast='CHECKPOINT '..(x-3)..' m';s.toast_time=1.7;audio.effect(s,'checkpoint',.35)
+   end
+  end
+ end
+ for i,t in ipairs(track.tokens) do
+  if not s.collected[i] and (p.body.x-t.x)^2+(p.body.y+.45-t.y)^2<1.6^2 then
+   s.collected[i]=true;s.tokens=s.tokens+1;s.score=s.score+500;s.toast='TRAIL TOKEN +500';s.toast_time=1.4;audio.effect(s,'pickup',.4)
+  end
+ end
+ s.roof_time=p.roof_contact and (s.roof_time+1/60) or 0
+ if s.roof_time>.55 or p.body.y< -9 or p.body.x< -10 then s.mode='crashed';input.clear(s.input);save_best() end
+ if p.body.x>=track.finish then
+  s.mode='finished';input.clear(s.input);s.score=s.score+1000;save_best()
+  s.record,s.new_best=progress.finish(s.record,s.time,s.practice)
+  s.medal=s.practice and 'PRACTICE / UNRANKED' or progress.medal(s.time)
+  if not s.practice then save_record() end
+ end
+ self.previous=old
+end
+function update(self,dt)
+ local p=self.p;local w,h=window.get_size();if w<1 or h<1 then return end
+ camera.update(s,p,w,h,dt,self.snap);self.snap=false
+ s.impact=math.max(0,s.impact-dt*32)
+ -- A short, bounded landing compression; no random persistent shake.
+ s.render_impact=math.sin(s.impact)*s.impact*.4
+ tuning.update(dt)
+ local game_dt=s.mode=='running' and math.min(dt,.05) or 0
+ art.update(self.art,s,p,game_dt)
+ local gas=input.pedals(s.input);audio.update(self.audio,s,p,gas,math.min(dt,.05))
+ if s.audio_dirty then pcall(sys.save,sys.get_save_file('buggy_ridge','audio'),{enabled=s.sound_on});s.audio_dirty=false end
+ s.telemetry_time=s.telemetry_time+dt
+ if html5 and html5.run and s.telemetry_time>.25 then
+  s.telemetry_time=0
+  if html5.run('document.hidden ? "hidden" : "visible"')=='hidden' and s.mode=='running' then s.mode='paused';input.clear(s.input);save_best() end
+  html5.run(string.format('window.buggyTelemetry={engine:"Defold 1.14.0",physics:"Box2D 3.1.1",mode:"%s",distance:%d,speed:%.2f,gear:%d,surface:%d,practice:%s,checkpoint:%d,tokens:%d,x:%.3f,y:%.3f};',s.mode,s.distance,s.speed,p.gear,s.surface,tostring(s.practice),s.checkpoint,s.tokens,p.body.x,p.body.y))
+ end
+end
+function final(self) audio.stop(self.audio);tuning.save();save_best();window.set_listener(nil);buggy_physics.destroy() end

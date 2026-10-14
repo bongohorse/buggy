@@ -1,0 +1,4 @@
+sound: "/assets/audio/grass.wav"
+looping: 1
+gain: 1
+speed: 1

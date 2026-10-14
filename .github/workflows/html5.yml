@@ -1,0 +1,59 @@
+name: Defold HTML5
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: buggy-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Install Lua test runtime
+        run: sudo apt-get update && sudo apt-get install -y liblua5.4-0
+      - name: Verify physics and source
+        run: |
+          bash tools/test_physics.sh
+          bash tools/build_box2d.sh x86_64-linux
+          bash tools/test_lua_bridge.sh
+          python3 tools/check_source.py
+          python3 tools/check_track_geometry.py
+          python3 tools/test_camera.py
+      - uses: actions/cache@v4
+        with:
+          path: .cache/toolchain
+          key: defold-1.14.0-90da8341
+      - name: Build Defold with Box2D 3.1.1
+        run: bash tools/build.sh wasm-web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Buggy-Ridge-HTML5
+          path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: dist/
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deployment
+        uses: actions/deploy-pages@v4

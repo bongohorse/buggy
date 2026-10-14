@@ -1,0 +1,14 @@
+local s=require 'modules.state'
+function init(self)
+ self.frames=0;s.restart=true
+ assert(buggy_physics.version()=='3.1.1')
+end
+function fixed_update(self)
+ s.input.keys.gas=true;self.frames=self.frames+1
+ if self.frames>=240 then
+  assert(s.mode=='running','Runtime smoke: unexpected game mode '..s.mode)
+  assert(s.distance>6,'Runtime smoke: buggy did not drive')
+  print(string.format('BUGGY_RUNTIME_SMOKE_PASS distance=%d speed=%.2f',s.distance,s.speed))
+  msg.post('@system:','exit',{code=0})
+ end
+end

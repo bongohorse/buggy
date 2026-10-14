@@ -1,0 +1,193 @@
+local s=require 'modules.state'
+local input=require 'modules.input'
+local tuning=require 'modules.tuning'
+local track=require 'modules.track'
+local cream=vmath.vector4(1,.96,.84,1)
+local function text(t,scale)
+ local n=gui.new_text_node(vmath.vector3(),t);gui.set_font(n,'default');gui.set_color(n,cream);gui.set_scale(n,vmath.vector3(scale,scale,1));return n
+end
+local function box(color)
+ local n=gui.new_box_node(vmath.vector3(),vmath.vector3(64,64,0));gui.set_texture(n,'art');gui.play_flipbook(n,'ui-panel-painted');gui.set_slice9(n,vmath.vector4(28,28,28,28));gui.set_color(n,color or vmath.vector4(1,1,1,1));gui.set_scale(n,vmath.vector3(.5,.5,1));return n
+end
+local function button(label,callback)
+ return {node=box(),label=text(label,1),callback=callback}
+end
+local function place(b,x,y,w,h,scale,enabled)
+ gui.set_position(b.node,vmath.vector3(x,y,0));local k=b.pedal and 1 or 2;gui.set_size(b.node,vmath.vector3(w*k,h*k,0));gui.set_position(b.label,vmath.vector3(x,y,0));gui.set_scale(b.label,vmath.vector3(scale,scale,1))
+ gui.set_enabled(b.node,enabled~=false);gui.set_enabled(b.label,enabled~=false)
+end
+local function txt(n,x,y,scale,value,enabled)
+ gui.set_position(n,vmath.vector3(x,y,0));gui.set_scale(n,vmath.vector3(scale,scale,1));gui.set_text(n,value);gui.set_enabled(n,enabled~=false)
+end
+local function pause()
+ if s.mode=='running' then s.mode='paused' elseif s.mode=='paused' then s.mode='running' end
+ input.clear(s.input)
+end
+function init(self)
+ msg.post('.','acquire_input_focus')
+ self.header=box();self.distance=text('',1);self.record=text('',.6);self.speed=text('',.7)
+ self.restart=button('RETRY',function()s.restart=true end);self.pause=button('II',pause)
+ self.brake=button('BRAKE');self.gas=button('GAS')
+ for _,b in ipairs({self.brake,self.gas}) do b.pedal=true;gui.set_scale(b.node,vmath.vector3(1,1,1));gui.play_flipbook(b.node,'ui-pedal-painted');gui.set_slice9(b.node,vmath.vector4(0,0,0,0));gui.set_font(b.label,'racing') end
+ self.speed_panel=box();gui.move_below(self.speed_panel,self.speed);self.section=text('',.5)
+ self.progress=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_color(self.progress,vmath.vector4(1,.55,.12,1))
+ gui.set_font(self.distance,'racing');gui.set_font(self.speed,'racing')
+ self.hint=text('',.5);self.toast=text('',.8)
+ self.veil=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_color(self.veil,vmath.vector4(.03,.09,.12,.65))
+ self.card=box();self.title=text('',1.5);gui.set_font(self.title,'racing');self.subtitle=text('',.65);self.detail=text('',.55)
+ self.action=button('LET\'S DRIVE',function()if s.mode=='paused' then s.mode='running';input.clear(s.input) elseif s.mode=='finished' then s.restart='full' else s.restart=true end end)
+ self.warning_panel=box();self.warning=text('',.5);self.road=text('',.5)
+ self.sound=button('SOUND ON',function() s.sound_on=not s.sound_on;s.audio_dirty=true end)
+ self.practice=button('PRACTICE OFF',function()
+  s.practice=not s.practice;s.checkpoint=3
+  if s.mode~='ready' then s.restart='full' end
+ end)
+ self.fullrun=button('NEW FULL RUN',function()s.practice=false;s.restart='full' end)
+ self.buttons={self.pause,self.restart,self.action}
+ self.expanded=false;self.drags={};self.input_table=s.input.touches
+ self.tune_panel=box();self.tune_title=text('PIT GARAGE',.6);self.tune_hint=text('LIVE / NO RESTART',.4)
+ self.defaults=button('DEFAULTS',function() tuning.reset() end)
+ self.tune=button('TUNE +',function()
+  self.expanded=not self.expanded
+  for id in pairs(self.drags) do s.input.touches[id]=nil end
+  self.drags={}
+ end)
+ self.rows={}
+ for i,spec in ipairs(tuning.spec) do
+  local r={label=text(spec.label,.5),value=text('',.55)}
+  r.rail=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_color(r.rail,vmath.vector4(.20,.22,.23,1))
+  r.fill=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_color(r.fill,vmath.vector4(.98,.61,.20,1))
+  r.knob=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_texture(r.knob,'art');gui.play_flipbook(r.knob,'dot');gui.set_color(r.knob,cream)
+  r.hit=gui.new_box_node(vmath.vector3(),vmath.vector3());gui.set_color(r.hit,vmath.vector4(1,1,1,0))
+  self.rows[i]=r
+ end
+end
+function update(self)
+ if self.input_table~=s.input.touches then self.drags={};self.mouse_down=false;self.input_table=s.input.touches end
+ local w,h=window.get_size();local safe=window.get_safe_area();local phone=w<h
+ local u=math.max(.65,math.min(w/(phone and 520 or 1280),h/720));local margin=16*u
+ local left=math.max(margin,safe.inset_left+margin);local right=w-math.max(margin,safe.inset_right+margin)
+ local top=h-math.max(24*u,safe.inset_top+24*u);local bottom=math.max(14*u,safe.inset_bottom+14*u)
+ local pw=phone and math.min(136*u,(right-left)*.32) or 132*u;local ph=120*u
+ place(self.brake,left+pw/2,bottom+ph/2,pw,ph,.9*u,true);place(self.gas,right-pw/2,bottom+ph/2,pw,ph,1.05*u,true)
+ for _,b in ipairs({self.brake,self.gas}) do local pos=gui.get_position(b.label);pos.y=bottom+ph*.24;gui.set_position(b.label,pos) end
+ local gas,brake=input.pedals(s.input)
+ gui.set_text(self.brake.label,s.gear==-1 and 'REV' or 'BRAKE')
+ gui.set_color(self.gas.node,gas and vmath.vector4(1,.85,.55,1) or vmath.vector4(1,1,1,.96));gui.set_color(self.brake.node,brake and vmath.vector4(1,.65,.40,1) or vmath.vector4(1,1,1,.96))
+ local hw=phone and 175*u or 290*u
+ gui.set_position(self.header,vmath.vector3(left+hw/2,top-25*u,0));gui.set_size(self.header,vmath.vector3(hw*2,104*u*2,0))
+ txt(self.distance,left+hw/2,top-6*u,.69*u,string.format('%03d / %d m',s.distance,track.length))
+ txt(self.record,left+hw/2,top-29*u,(phone and .49 or .37)*u,s.practice and string.format('PRACTICE / CP %d',math.max(0,s.checkpoint-3)) or string.format('%.1fs / PB %s',s.time,s.record.best_time and string.format('%.1f',s.record.best_time) or '--'))
+ txt(self.section,left+hw/2,top-48*u,(phone and .44 or .32)*u,track.section(s.distance+3))
+ local fill=math.max(1,(hw-32*u)*math.min(1,s.distance/track.length))
+ gui.set_size(self.progress,vmath.vector3(fill,3*u,0));gui.set_position(self.progress,vmath.vector3(left+16*u+fill/2,top-59*u,0))
+ place(self.tune,right-186*u,top-17*u,82*u,54*u,math.max(.4,.48*u),true)
+ gui.set_text(self.tune.label,self.expanded and 'TUNE -' or 'TUNE +')
+ place(self.pause,right-27*u,top-17*u,54*u,54*u,.7*u,true);place(self.restart,right-96*u,top-17*u,74*u,54*u,.47*u,true)
+ gui.set_position(self.speed_panel,vmath.vector3(w/2,bottom+39*u,0));gui.set_size(self.speed_panel,vmath.vector3(224*u,152*u,0))
+ txt(self.speed,w/2,bottom+39*u,.46*u,string.format('%s %02d KM/H',s.gear==-1 and 'R' or (s.gear==0 and 'B' or 'D'),s.speed))
+ local surfaces={'DIRT','GRASS','STONE','WOOD'}
+ txt(self.road,w/2,bottom+91*u,.48*u,surfaces[(s.surface or 0)+1]..' / '..(s.tokens or 0)..'/3 TOKENS')
+ txt(self.hint,w/2,bottom+ph+25*u,.43*u,phone and 'BRAKE: hold at rest to reverse' or 'A / LEFT: brake + reverse     D / RIGHT: gas     R: retry     SPACE: pause',s.mode=='running' and s.time<8)
+ txt(self.toast,w/2,top-100*u,.75*u,s.toast,s.mode=='running' and s.toast_time>0)
+ place(self.sound,right-42*u,top-68*u,84*u,36*u,(phone and .48 or .43)*u,true)
+ gui.set_text(self.sound.label,phone and (s.sound_on and 'SND ON' or 'SND OFF') or (s.sound_on and 'SOUND ON' or 'SOUND OFF'))
+ place(self.practice,right-154*u,top-68*u,128*u,36*u,.48*u,true)
+ gui.set_text(self.practice.label,s.practice and 'PRACTICE ON' or 'PRACTICE OFF')
+ local warn=track.warning(s.distance+3)
+ gui.set_position(self.warning_panel,vmath.vector3(w/2,top-125*u,0));gui.set_size(self.warning_panel,vmath.vector3(math.min(w-32,430*u)*2,104*u,0))
+ gui.set_enabled(self.warning_panel,warn~='' and s.mode=='running' and not self.expanded)
+ txt(self.warning,w/2,top-125*u,.46*u,warn,warn~='' and s.mode=='running' and not self.expanded)
+ local modal=s.mode~='running';gui.set_enabled(self.veil,modal);gui.set_enabled(self.card,modal)
+ gui.set_position(self.veil,vmath.vector3(w/2,h/2,0));gui.set_size(self.veil,vmath.vector3(w,h,0))
+ local cw=math.min(w-2*margin,540*u);local cy=h*.55
+ gui.set_position(self.card,vmath.vector3(w/2,cy,0));gui.set_size(self.card,vmath.vector3(cw*2,720*u,0))
+ local title,sub,detail,action='BUGGY RIDGE','ALPINE CHALLENGE  /  597 METRES','Brake for crests. Build speed for the gap.\nHold BRAKE at rest to reverse.\nGold 65s / Silver 90s / Bronze: finish.','LET\'S DRIVE'
+ if s.mode=='paused' then title='TAKE A BREATHER';sub=s.practice and 'PRACTICE / NO RECORDS' or 'Your run is paused';detail='Ready when you are.';action='RESUME'
+ elseif s.mode=='crashed' then title='ONE MORE TRY';sub=string.format('%d m  /  %d points',s.distance,s.score);detail='Ease off before the crest.\nTap GAS for an instant retry.';action=s.practice and 'RETRY CHECKPOINT' or 'TRY AGAIN'
+ elseif s.mode=='finished' then title=s.practice and 'PRACTICE COMPLETE' or 'RIDGE COMPLETE!';sub=string.format('%.1f seconds  /  %s',s.time,s.medal or '');detail=string.format('%d/3 tokens / %d landings / %d pts\n%s',s.tokens,s.landings,s.score,s.new_best and 'NEW PERSONAL BEST!' or (s.practice and 'Practice runs do not earn records.' or 'Try a cleaner line for a faster medal.'));action='DRIVE AGAIN' end
+ txt(self.title,w/2,cy+113*u,(phone and .88 or 1.15)*u,title,modal)
+ txt(self.subtitle,w/2,cy+67*u,.55*u,sub,modal);txt(self.detail,w/2,cy+7*u,(phone and .55 or .45)*u,detail,modal)
+ gui.set_text(self.action.label,action);place(self.action,w/2,cy-82*u,cw-64*u,60*u,.58*u,modal)
+ place(self.fullrun,w/2,cy-137*u,cw-110*u,36*u,.43*u,modal and s.mode~='ready')
+ local wide=w>=680;local row_h=math.max(38,40*u)
+ local panel_h=wide and math.max(116,126*u) or row_h*5+66
+ local panel_top=top-94*u;local panel_left=left;local panel_w=right-left
+ gui.set_enabled(self.tune_panel,self.expanded)
+ gui.set_position(self.tune_panel,vmath.vector3(w/2,panel_top-panel_h/2,0));gui.set_size(self.tune_panel,vmath.vector3(panel_w*2,panel_h*2,0))
+ txt(self.tune_title,panel_left+77,panel_top-15,math.max(.44,.55*u),'PIT GARAGE',self.expanded)
+ place(self.defaults,panel_left+65,panel_top-panel_h+18,112,30,math.max(.4,.46*u),self.expanded)
+ txt(self.tune_hint,panel_left+panel_w*.67,panel_top-panel_h+18,math.max(.32,.4*u),'LIVE / NO RESTART',self.expanded)
+ for i,row in ipairs(self.rows) do
+  local x,y,rail_w
+  if wide then
+   local cell=(panel_w-28)/5;x=panel_left+14+(i-.5)*cell;y=panel_top-62;rail_w=cell-22
+   txt(row.label,x,y+23,math.max(.4,.5*u),tuning.spec[i].label,self.expanded)
+   txt(row.value,x,y+7,math.max(.43,.55*u),tuning.label(i),self.expanded)
+   y=y-12
+  else
+   y=panel_top-31-(i-.5)*row_h;rail_w=panel_w-128;x=panel_left+112+rail_w/2
+   txt(row.label,panel_left+55,y+8,math.max(.4,.5*u),tuning.spec[i].label,self.expanded)
+   txt(row.value,panel_left+55,y-8,math.max(.43,.55*u),tuning.label(i),self.expanded)
+  end
+  row.x=x-rail_w/2;row.width=rail_w;row.y=y
+  local fraction=tuning.fraction(i);local fill=math.max(1,rail_w*fraction)
+  gui.set_position(row.rail,vmath.vector3(x,y,0));gui.set_size(row.rail,vmath.vector3(rail_w,5,0))
+  gui.set_position(row.fill,vmath.vector3(row.x+fill/2,y,0));gui.set_size(row.fill,vmath.vector3(fill,5,0))
+  gui.set_position(row.knob,vmath.vector3(row.x+rail_w*fraction,y,0));gui.set_size(row.knob,vmath.vector3(20,20,0))
+  gui.set_position(row.hit,vmath.vector3(x,y,0));gui.set_size(row.hit,vmath.vector3(rail_w+20,38,0))
+  for _,node in ipairs({row.rail,row.fill,row.knob,row.hit}) do gui.set_enabled(node,self.expanded) end
+ end
+end
+local function drag(self,index,x)
+ local row=self.rows[index];tuning.adjust(index,(x-row.x)/math.max(1,row.width))
+end
+local function pointer(self,id,a)
+ if a.released then
+  if s.retry_pointer==id then s.retry_pointer=nil end
+  self.drags[id]=nil;s.input.touches[id]=nil;tuning.save();return
+ end
+ local captured=self.drags[id]
+ if captured then drag(self,captured,a.x);s.input.touches[id]=nil;return end
+ if a.pressed then
+  for _,b in ipairs({self.sound,self.practice}) do if gui.pick_node(b.node,a.x,a.y) then b.callback();s.input.touches[id]=nil;return end end
+  if s.mode=='crashed' and gui.pick_node(self.gas.node,a.x,a.y) then s.restart=true;s.retry_pointer=id;return end
+  if gui.pick_node(self.tune.node,a.x,a.y) then self.tune.callback();s.input.touches[id]=nil;return end
+  if self.expanded then
+   if gui.pick_node(self.defaults.node,a.x,a.y) then self.defaults.callback();s.input.touches[id]=nil;return end
+   for i,row in ipairs(self.rows) do
+    if gui.pick_node(row.hit,a.x,a.y) then self.drags[id]=i;drag(self,i,a.x);s.input.touches[id]=nil;return end
+   end
+   if gui.pick_node(self.tune_panel,a.x,a.y) then s.input.touches[id]=nil;return end
+  end
+  if s.mode~='running' then
+   if s.mode~='ready' and gui.pick_node(self.fullrun.node,a.x,a.y) then self.fullrun.callback();return end
+   if gui.pick_node(self.action.node,a.x,a.y) then self.action.callback() end
+   s.input.touches[id]=nil;return
+  end
+  for _,b in ipairs({self.pause,self.restart}) do if gui.pick_node(b.node,a.x,a.y) then b.callback();s.input.touches[id]=nil;return end end
+ end
+ local pedal=nil
+ if s.mode=='running' then
+  if gui.pick_node(self.gas.node,a.x,a.y) then pedal='gas' elseif gui.pick_node(self.brake.node,a.x,a.y) then pedal='brake' end
+ end
+ s.input.touches[id]=pedal
+end
+function on_input(self,id,a)
+ if id==hash('gas') or id==hash('brake') then
+  local key=id==hash('gas') and 'gas' or 'brake'
+  if key=='gas' and a.pressed and s.mode=='crashed' then s.restart=true;s.retry_key=true end
+  if key=='gas' and a.released then s.retry_key=nil end
+  if a.released then s.input.keys[key]=false elseif a.pressed and s.mode=='running' then s.input.keys[key]=true end
+ elseif id==hash('pause') and a.pressed then
+  if s.mode=='ready' or s.mode=='crashed' or s.mode=='finished' then s.restart=true else pause() end
+ elseif id==hash('restart') and a.pressed then s.restart=true
+ elseif id==hash('multitouch') then
+  self.touch_active=true;s.input.touches.mouse=nil
+  for _,t in ipairs(a.touch or {}) do pointer(self,t.id,t) end
+ elseif id==hash('pointer') and not self.touch_active then
+  if a.pressed then self.mouse_down=true end
+  if self.mouse_down or a.released then pointer(self,'mouse',a) end
+  if a.released then self.mouse_down=false end
+ end
+end
