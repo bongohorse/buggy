@@ -2,5 +2,24 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "timezone": "Europe/Berlin",
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "major": {
+    "dependencyDashboardApproval": true
+  },
+  "packageRules": [
+    {
+      "description": "Review GitHub-hosted runner upgrades separately to protect the pinned Defold and Box2D toolchain",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "ubuntu"
+      ],
+      "dependencyDashboardApproval": true
+    }
   ]
 }
